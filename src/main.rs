@@ -13,9 +13,9 @@ fn main() {
 }
 
 fn read_files() -> Result<(), Box<dyn Error>> {
-    // let re = Regex::new(r"^[\d]{8}\.txt$").unwrap();
-    // let re = Regex::new(r"^([\d]{4})([\d]{2})([\d]{2})\.txt$").unwrap();
     let re = Regex::new(r"^([\d]{4})([\d]{2})(01)\.txt$").unwrap();
+
+    let wet_run = false;
 
     for entry in fs::read_dir(".")? {
         let entry = entry?;
@@ -33,13 +33,17 @@ fn read_files() -> Result<(), Box<dyn Error>> {
             None => Path::new("Uncategorized").into(),
         };
 
-        println!("{:?} -> {:?}", path, new_path);
+        if wet_run {
+            println!("[wet run] {:?} -> {:?}", path, new_path);
 
-        fs::create_dir_all(&new_path)?;
+            fs::create_dir_all(&new_path)?;
 
-        new_path.push(name);
+            new_path.push(name);
 
-        fs::rename(path, new_path)?;
+            fs::rename(path, new_path)?;
+        } else {
+            println!("[dry run] {:?} -> {:?}", path, new_path);
+        }
     }
 
     Ok(())
