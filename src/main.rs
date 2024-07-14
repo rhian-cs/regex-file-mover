@@ -5,6 +5,7 @@ use std::{
     fs,
     path::{Path, PathBuf},
     process,
+    time::Instant,
 };
 
 use args::Args;
@@ -18,6 +19,8 @@ fn main() {
 }
 
 fn read_and_process_files() -> Result<(), Box<dyn Error>> {
+    let start_time = Instant::now();
+
     let args = Args::parse()?;
     let re = Regex::new(args.pattern.as_str()).unwrap();
     let mut total_count = 0;
@@ -56,13 +59,17 @@ fn read_and_process_files() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    print!("{total_count} files were processed.");
+    print!("\n{total_count} files were processed.");
     if uncategorized_count > 0 {
-        print!("{uncategorized_count} files are uncategorized due to not matching the pattern.");
+        print!(" {uncategorized_count} files are uncategorized due to not matching the pattern.");
     } else {
-        print!("No uncategorized files.");
+        print!(" No uncategorized files.");
     }
     println!("");
+
+    if args.wet_run {
+        println!("Took {} seconds.", start_time.elapsed().as_secs_f32());
+    }
 
     Ok(())
 }
