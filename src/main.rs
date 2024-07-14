@@ -1,23 +1,29 @@
+mod args;
+
 use std::{
     error::Error,
     fs,
     path::{Path, PathBuf},
+    process,
 };
 
+use args::Args;
 use regex::{Captures, Regex};
 
 fn main() {
-    if let Err(err) = read_files() {
+    if let Err(err) = read_and_process_files() {
         eprintln!("Failure: {err}");
+        process::exit(1);
     }
 }
 
-fn read_files() -> Result<(), Box<dyn Error>> {
-    let re = Regex::new(r"^([\d]{4})([\d]{2})(01)\.txt$").unwrap();
+fn read_and_process_files() -> Result<(), Box<dyn Error>> {
+    let args = Args::parse()?;
+    let re = Regex::new(args.pattern.as_str()).unwrap();
+    let mut total_count = 0;
+    let mut uncategorized_count = 0;
 
-    let wet_run = false;
-
-    for entry in fs::read_dir(".")? {
+    for entry in fs::read_dir(args.directory)? {
         let entry = entry?;
         let path = entry.path();
 
@@ -28,23 +34,35 @@ fn read_files() -> Result<(), Box<dyn Error>> {
         let name = entry.file_name();
         let name = name.to_str().ok_or("Could not parse filename")?;
 
+        total_count += 1;
+
         let mut new_path: PathBuf = match re.captures(name) {
             Some(captures) => build_new_dir(captures),
-            None => Path::new("Uncategorized").into(),
+            None => {
+                uncategorized_count += 1;
+                Path::new(&args.uncategorized_directory).into()
+            }
         };
 
-        if wet_run {
-            println!("[wet run] {:?} -> {:?}", path, new_path);
+        let run_mode = if args.wet_run { "wet-run" } else { "dry-run" };
+        println!("[{run_mode}] {:?} -> {:?}", path, new_path);
 
+        if args.wet_run {
             fs::create_dir_all(&new_path)?;
 
             new_path.push(name);
 
             fs::rename(path, new_path)?;
-        } else {
-            println!("[dry run] {:?} -> {:?}", path, new_path);
         }
     }
+
+    print!("{total_count} files were processed.");
+    if uncategorized_count > 0 {
+        print!("{uncategorized_count} files are uncategorized due to not matching the pattern.");
+    } else {
+        print!("No uncategorized files.");
+    }
+    println!("");
 
     Ok(())
 }
