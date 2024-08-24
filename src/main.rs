@@ -51,7 +51,8 @@ fn read_and_process_files() -> Result<(), Box<dyn Error>> {
 
         let run_mode = if args.wet_run { "wet-run" } else { "dry-run" };
         println!(
-            "[{run_mode}] {} -> {}",
+            "[{run_mode}] \"{}\" {} -> {}",
+            name,
             path.to_str().unwrap(),
             new_path.to_str().unwrap()
         );
